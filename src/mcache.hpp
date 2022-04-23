@@ -4,114 +4,100 @@
 
 #include "options.hpp"
 #include "simple.hpp"
-
-using namespace std;
+#include "fifo.hpp"
+#include "lru.hpp"
+#include "lfu.hpp"
 
 namespace mcache {
 template <class K, class V>
-class Cache {
+class MCache {
    public:
-    Cache();
-    Cache(string type);
-    ~Cache();
-    int set(const K &key, const V *value, option opts...);
-    const V *get(const K &key, option opts...);
-    int mset(const vector<K> &keys, const vector<V> &values, option opts...);
-    const unordered_map<K, const V *> mget(const vector<K> &keys,
-                                           option opts...);
-    bool remove(const K &key);
-    int mremove(const vector<K> &keys);
-    bool has(const K &key);
+    MCache(std::size_t _max_cap) : cc(Simple<K, V>(_max_cap)) {}
+
+    MCache(std::size_t _max_cap, std::size_t type) {
+        switch (type) {
+        case TYPE_LRU:
+            cc = LRU<K, V>(_max_cap);
+            break;
+        case TYPE_LFU:
+            cc = LFU<K, V>(_max_cap);
+            break;
+        case TYPE_FIFO:
+            cc = FIFO<K, V>(_max_cap);
+            break;
+        default:
+            cc = Simple<K, V>(_max_cap);
+        }
+    }
+
+    ~MCache() = default;
+
+    std::size_t Set(const K &key, const V &value, option opts...) {
+        return cc.Set(key, value);
+    }
+
+    const V &Get(const K &key, option opts...) {
+        return cc.Get(key);
+    }
+
+    bool Remove(const K &key) {
+        return cc.Remove(key);
+    }
+
+    std::size_t MSet(const vector<K> &keys, const vector<V> &values, option opts...) {
+        if (keys.size() != values.size()) {
+            throw std::range_error("Unmatched key and value");
+        }
+
+        auto cnt = 0;
+        for (size_t i = 0; i < keys.size(); i++)
+        {
+            auto ret = cc.Set(keys[i], values[i]);
+            if (ret == 1) {
+                cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    std::unordered_map<K, V> MGet(const vector<K> &keys, option opts...) {
+        std::unordered_map<K, V> result;
+        for (auto key : keys) {
+            const V *val = cc.Get(key);
+            if (val != nullptr) {
+                result.emplace(key, val);
+            }
+        }
+
+        return result;
+    }
+
+    std::size_t MRemove(const vector<K> &keys) {
+        auto cnt = 0;
+        for (auto key : keys) {
+            if (cc.Remove(key)) {
+                cnt++;
+            }
+        }
+
+        return cnt;
+    }
+
+    bool Has(const K &key) {
+        return cc.Has(key);
+    }
+
+    std::size_t Size() {
+        return cc.Size();
+    }
+
+    void debug() {
+        return cc.debug();
+    }
 
    private:
     Cacher<K, V> cc;
 };
 
-template <class K, class V>
-Cache<K, V>::Cache() {
-    cc = Simple<K, V>();
 }
-
-template <class K, class V>
-Cache<K, V>::Cache(string type) {
-    // switch (type) {
-    //     case TYPE_LRU:
-    //         cc = LRU<T>;
-    //         break;
-    //     case TYPE_LFU<T>:
-    //         cc = LFU<T>;
-    //         break;
-    //     case TYPE_ARC:
-    //         cc = ARC<T>;
-    //         break;
-    //     default:
-    //         cc = Simple<T>;
-    // }
-}
-
-template <class K, class V>
-Cache<K, V>::~Cache() {}
-
-template <class K, class V>
-int Cache<K, V>::set(const K &key, const V *value, option opts...) {
-    return cc.set(key, value);
-}
-
-template <class K, class V>
-const V *Cache<K, V>::get(const K &key, option opts...) {
-    return cc.get(key);
-}
-
-template <class K, class V>
-int Cache<K, V>::mset(const vector<K> &keys, const vector<V> &values,
-                      option opts...) {
-    if (keys.size() != values.size()) {
-        return -1;
-    }
-    int result = 0;
-    for (int i = 0; i < keys.size(); i++) {
-        int rt = cc.set(keys[i], values[i]);
-        if (rt == 1) {
-            result++;
-        }
-    }
-
-    return result;
-}
-
-template <class K, class V>
-const unordered_map<K, const V *> Cache<K, V>::mget(const vector<K> &keys,
-                                                    option opts...) {
-    unordered_map<K, const V *> result;
-    for (auto key : keys) {
-        const V *val = cc.get(key);
-        if (val != nullptr) {
-            result.insert(key, val);
-        }
-    }
-
-    return result;
-}
-
-template <class K, class V>
-bool Cache<K, V>::remove(const K &key) {
-    return cc.remove(key);
-}
-
-template <class K, class V>
-int Cache<K, V>::mremove(const vector<K> &keys) {
-    int result = 0;
-    for (auto key : keys) {
-        if (cc.remove(key)) {
-            result++;
-        }
-    }
-
-    return result;
-}
-
-template <class K, class V>
-bool Cache<K, V>::has(const K &key) {
-    return cc.has(key);
-}
-}  // namespace mcache

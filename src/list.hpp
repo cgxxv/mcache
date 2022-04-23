@@ -1,27 +1,12 @@
 #pragma once
 #include <cstdlib>
 
-using namespace std;
-
 namespace mcache {
 template <class T>
 class Element {
    public:
     Element() = default;
     Element(T _data) : data(_data) {}
-    // Element *next() noexcept {
-    //     if (_list != nullptr && _next != _list->root) {
-    //         return _next;
-    //     }
-    //     return nullptr;
-    // }
-    // Element *prev() noexcept {
-    //     if (_list != nullptr && _prev != _list->root) {
-    //         return _prev;
-    //     }
-    //     return nullptr;
-    // }
-
     Element *next;
     Element *prev;
     T data;
@@ -36,14 +21,13 @@ class List {
         root->prev = root;
     }
     ~List() noexcept {
-        //TODO:
-        // if (root->next == root && root->prev == root) {
-        //     return;
-        // }
-        // Element<T> *e;
-        // while ((e = root->next) != nullptr) {
-        //     delete e;
-        // }
+        auto *e = root->next;
+        while (e->data != nullptr) {
+            auto *next = e->next;
+            delete e;
+            e = next;
+        }
+        delete root;
     }
 
     std::size_t size() {

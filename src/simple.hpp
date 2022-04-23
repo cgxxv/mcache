@@ -3,41 +3,30 @@
 #include <unordered_map>
 #include <memory>
 #include <stdexcept>
+#include <iostream>
 
 #include "cache.hpp"
 
 namespace mcache {
-template <class V>
-struct simpleItem {
-    const V value;
-    struct timeval expire;  // time to be expired, `now + ttl`
-    int index;
+template <class K, class V>
+class simpleItem : public cacheItem<K, V> {
+   public:
+    using cacheItem<K, V>::value;
+    using cacheItem<K, V>::expire;
+    using cacheItem<K, V>::is_expired;
 
-    simpleItem(const V _value) : value(_value), index(0) {
-        gettimeofday(&expire, nullptr);
-    }
-    bool is_expired() {
-        int ts = ttl(expire);
-        if (ts < 0) {
-            return true;
-        }
+    std::size_t index;
 
-        return false;
-    }
+    simpleItem(const V _val) : cacheItem<K, V>(_val), index(0) {}
 };
 
 template <class K, class V>
-class Simple : public Cacher<K, V> {
+class Simple : public Cache<K, V> {
    public:
-    Simple(std::size_t _max_cap) : max_cap(_max_cap) {}
+    Simple(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
     std::size_t Set(const K &key, const V &value) noexcept override {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        //TODO: simpleItem: cannot be assigned because its copy assignment operator is implicitly deleted
-        // simpleItem item(value);
-        // auto item = new simpleItem(value);
-        auto item = std::make_shared<simpleItem<V>>(value);
+        auto item = std::make_shared<simpleItem<K, V>>(value);
         auto found = items.find(key);
         if (found == items.end()) {
             if (Size() > max_cap) {
@@ -55,11 +44,25 @@ class Simple : public Cacher<K, V> {
         if (found == items.end()) {
             throw std::range_error("No such element in the cache");
         }
-        return found->second->value;
+
+        if (found->second->is_expired()) {
+            throw std::range_error("No such element in the cache");
+        }
+
+        return found->second->value();
     }
 
     bool Has(const K &key) noexcept override {
-        return items.find(key) != items.end();
+        auto found = items.find(key);
+        if (found == items.end()) {
+            return false;
+        }
+        if (found->second->is_expired()) {
+            items.erase(found);
+            return false;
+        }
+
+        return true;
     }
 
     bool Remove(const K &key) noexcept override {
@@ -71,7 +74,6 @@ class Simple : public Cacher<K, V> {
         return true;
     }
 
-    // TODO: with bad performance
     void Evict(const int count) noexcept override{
         auto cnt = 0;
         for (auto it = items.begin(); it != items.end(); it++) {
@@ -85,13 +87,21 @@ class Simple : public Cacher<K, V> {
         return;
     }
 
-    std::size_t Size() noexcept override {
-        return items.size();
+    std::size_t Size() noexcept override { return items.size(); }
+
+    void debug() noexcept override {
+        for (auto it = items.begin(); it != items.end(); it++) {
+            std::cout << "[SIMPLE] " << max_cap << "/" << Size() <<
+                        ", key: " << it->first <<
+                        ", val: " << it->second->value() <<
+                        ", expire: (" << it->second->expire().tv_sec << ", " << it->second->expire().tv_usec << ")" <<
+                        ", index: " << it->second->index << std::endl;
+        }
     }
 
    private:
-    std::unordered_map<K, std::shared_ptr<simpleItem<V>>> items;
-    std::size_t max_cap;
+    std::unordered_map<K, std::shared_ptr<simpleItem<K, V>>> items;
+    using Cache<K, V>::max_cap;
 };
 
 }

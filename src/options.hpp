@@ -6,10 +6,10 @@ using namespace std;
 
 namespace mcache {
 
-#define TYPE_SIMPLE "simple"
-#define TYPE_LRU "lru"
-#define TYPE_LFU "lfu"
-#define TYPE_ARC "arc"
+#define TYPE_SIMPLE 0
+#define TYPE_LFU 1
+#define TYPE_LRU 2
+#define TYPE_FIFO 3
 
 typedef const void loaderFunc(const string &key);
 typedef unordered_map<string, const void> mloaderFunc(
