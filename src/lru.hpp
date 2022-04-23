@@ -10,9 +10,7 @@
 
 #pragma once
 #include <sys/time.h>
-#include <ctime>
 #include <iostream>
-#include <string>
 #include <unordered_map>
 #include <memory>
 #include <stdexcept>
@@ -22,34 +20,23 @@
 
 namespace mcache {
 template <class K, class V>
-struct lruItem {
+class lruItem : public cacheItem<K, V> {
+   public:
+    using cacheItem<K, V>::value;
+    using cacheItem<K, V>::expire;
+    using cacheItem<K, V>::is_expired;
+
     const K key;
-    const V value;
-    struct timeval expire;
-    std::size_t _ttl;
-    std::size_t accessed_at;
+    struct timeval accessed_at;
     Element<std::shared_ptr<lruItem<K, V>>> *element;
 
-    //TODO: ttl should passed by dynamic options
-    lruItem(const K _key, const V _value) : key(_key), value(_value), _ttl(3600), accessed_at(0) {
-        gettimeofday(&expire, nullptr);
-        expire.tv_sec += _ttl;
-    }
-
-    bool is_expired() {
-        int ts = ttl(expire);
-        if (ts < 0) {
-            return true;
-        }
-
-        return false;
-    }
+    lruItem(const K _key, const V _val) : cacheItem<K, V>(_val), key(_key) {}
 };
 
 template <class K, class V>
-class LRU : public Cacher<K, V> {
+class LRU : public Cache<K, V> {
    public:
-    LRU(std::size_t _max_cap) : max_cap(_max_cap) {}
+    LRU(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
     std::size_t Set(const K &key, const V &value) noexcept override {
         auto item = std::make_shared<lruItem<K, V>>(key, value);
@@ -80,7 +67,7 @@ class LRU : public Cacher<K, V> {
         }
 
         update(found->second);
-        return found->second->value;
+        return found->second->value();
     }
 
     bool Has(const K &key) noexcept override {
@@ -130,29 +117,30 @@ class LRU : public Cacher<K, V> {
         }
     }
 
-    void debug() noexcept {
-        auto *e = _list.front();
-        while (e->data != nullptr) {
-            std::cout << "key: " << e->data->key <<
-                        ", val: " << e->data->value <<
-                        ", accessed_at: " << e->data->accessed_at << std::endl;
-            e = e->next;
-        }
-    }
-
     std::size_t Size() override {
         return items.size();
     }
 
-   private:
+    void debug() noexcept override {
+        auto *e = _list.front();
+        while (e->data != nullptr) {
+            std::cout << "[LRU] " << max_cap << "/" << Size() <<
+                        ", key: " << e->data->key <<
+                        ", val: " << e->data->value() <<
+                        ", accessed_at: (" << e->data->accessed_at.tv_sec <<
+                        ", " << e->data->accessed_at.tv_usec <<
+                        ")" <<std::endl;
+            e = e->next;
+        }
+    }
+
+   protected:
     List<std::shared_ptr<lruItem<K, V>>> _list;
     std::unordered_map<K, std::shared_ptr<lruItem<K, V>>> items;
-    std::size_t max_cap;
+    using Cache<K, V>::max_cap;
 
     void update(std::shared_ptr<lruItem<K, V>> item) {
-        struct timeval now;
-        gettimeofday(&now, nullptr);
-        item->accessed_at = now.tv_sec*10e6+now.tv_usec;
+        gettimeofday(&item->accessed_at, nullptr);
         if (_list.size() == 0) {
             auto *element = new Element(item);
             item->element = element;
@@ -168,11 +156,6 @@ class LRU : public Cacher<K, V> {
         } else {
             throw std::range_error("unreachable");
         }
-
-        //TODO: Is this nessary?
-        // if (items.size() != _list.size()) {
-        //     throw std::range_error("unreachable");
-        // }
     }
 };
 

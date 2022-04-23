@@ -22,6 +22,7 @@ FILE(GLOB mcache_srcs "${PROJECT_SOURCE_DIR}/src/*.hpp")
 ADD_LIBRARY(mcache INTERFACE ${mcache_srcs})
 
 FILE(GLOB simple_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"
+                        "${PROJECT_SOURCE_DIR}/examples/*.h"
                         "${PROJECT_SOURCE_DIR}/examples/*.cc")
 ADD_EXECUTABLE(simple ${simple_srcs})
 TARGET_LINK_LIBRARIES(simple mcache)

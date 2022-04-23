@@ -1,39 +1,14 @@
 #pragma once
 #include <sys/time.h>
+#include <unordered_map>
+#include <memory>
+#include <stdexcept>
+#include <iostream>
+
+#include "list.hpp"
 
 namespace mcache {
-
-#define MAX_INSERT_SORT_SIZE 512 //when cache is less than 512, we use insertion sort
-
-#define MCACHE_ERROR_ENUM(x)                                  \
-    x(not_found,          "No such element in the cache")     \
-    x(broken_request,     "Request packet is broken")
-
-// bool set(const K &key, const void *value);
-// int mset(const vector<string> &keys, const vector<void> *values);
-
-// const void *get(const K &key);
-// const vector<void> mget(const vector<string> &keys);
-
-// bool remove(const K &key);
-// int mremove(const vector<string> &keys);
-// bool has(const K &key);
-
-// the remote cache client, eg: memcache client, redis client
-template <class K, class V>
-class Cacher {
-   public:
-    // virtual Cacher(size_t max_cap) = default;
-    virtual ~Cacher() = default;
-    virtual std::size_t Set(const K &key, const V &value) = 0;
-    virtual const V &Get(const K &key) = 0;
-    virtual bool Has(const K &key) = 0;
-    virtual bool Remove(const K &key) = 0;
-    virtual void Evict(const int count) = 0;
-    virtual std::size_t Size() = 0;
-};
-
-int ttl(struct timeval &expire) noexcept {
+int ttl(const struct timeval &expire) noexcept {
     struct timeval tv;
     gettimeofday(&tv, NULL);
 
@@ -45,4 +20,48 @@ int ttl(struct timeval &expire) noexcept {
     return t;
 }
 
-}  // namespace mcache
+template <class K, class V>
+class cacheItem {
+   protected:
+    const V _value;
+    struct timeval _expire;  // time to be expired, `now + ttl`
+    std::size_t _ttl;
+
+    //TODO: ttl should passed by dynamic options
+    cacheItem(const V _val) : _value(_val), _ttl(3600) {
+        gettimeofday(&_expire, nullptr);
+        _expire.tv_sec += _ttl;
+    }
+    ~cacheItem() = default;
+
+    bool is_expired() {
+        int ts = ttl(_expire);
+        if (ts < 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    const V &value() noexcept { return _value; }
+    const struct timeval &expire() noexcept { return _expire; }
+};
+
+template <class K, class V>
+class Cache {
+   protected:
+    Cache(std::size_t _max_cap) : max_cap(_max_cap) {}
+    virtual ~Cache() = default;
+
+    virtual std::size_t Set(const K &key, const V &value) = 0;
+    virtual const V &Get(const K &key) = 0;
+    virtual bool Has(const K &key) = 0;
+    virtual bool Remove(const K &key) = 0;
+    virtual void Evict(const int count) = 0;
+    virtual std::size_t Size() = 0;
+    virtual void debug() = 0;
+
+    std::size_t max_cap;
+};
+
+}

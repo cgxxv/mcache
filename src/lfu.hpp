@@ -12,9 +12,7 @@
 
 #pragma once
 #include <sys/time.h>
-#include <ctime>
 #include <iostream>
-#include <string>
 #include <unordered_map>
 #include <memory>
 #include <stdexcept>
@@ -24,33 +22,23 @@
 
 namespace mcache {
 template <class K, class V>
-struct lfuItem {
+class lfuItem : public cacheItem<K, V> {
+   public:
+    using cacheItem<K, V>::value;
+    using cacheItem<K, V>::expire;
+    using cacheItem<K, V>::is_expired;
+
     const K key;
-    const V value;
-    struct timeval expire;
-    std::size_t _ttl;
     std::size_t freq;
     Element<std::shared_ptr<lfuItem<K, V>>> *element;
 
-    //TODO: ttl should passed by dynamic options
-    lfuItem(const K _key, const V _value) : key(_key), value(_value), _ttl(3600), freq(0) {
-        gettimeofday(&expire, nullptr);
-        expire.tv_sec += _ttl;
-    }
-    bool is_expired() {
-        int ts = ttl(expire);
-        if (ts < 0) {
-            return true;
-        }
-
-        return false;
-    }
+    lfuItem(const K _key, const V _val) : cacheItem<K, V>(_val), key(_key), freq(0) {}
 };
 
 template <class K, class V>
-class LFU : public Cacher<K, V> {
+class LFU : public Cache<K, V> {
    public:
-    LFU(std::size_t _max_cap) : max_cap(_max_cap) {}
+    LFU(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
     std::size_t Set(const K &key, const V &value) noexcept override {
         auto item = std::make_shared<lfuItem<K, V>>(key, value);
@@ -81,7 +69,7 @@ class LFU : public Cacher<K, V> {
         }
 
         update(found->second);
-        return found->second->value;
+        return found->second->value();
     }
 
     bool Has(const K &key) noexcept override {
@@ -131,24 +119,25 @@ class LFU : public Cacher<K, V> {
         }
     }
 
-    void debug() noexcept {
+    std::size_t Size() override {
+        return items.size();
+    }
+
+    void debug() noexcept override {
         auto *e = _list.front();
         while (e->data != nullptr) {
-            std::cout << "key: " << e->data->key <<
-                        ", val: " << e->data->value <<
+            std::cout << "[LFU] " << max_cap << "/" << Size() <<
+                        ", key: " << e->data->key <<
+                        ", val: " << e->data->value() <<
                         ", freq: " << e->data->freq << std::endl;
             e = e->next;
         }
     }
 
-    std::size_t Size() override {
-        return items.size();
-    }
-
    private:
     List<std::shared_ptr<lfuItem<K, V>>> _list;
     std::unordered_map<K, std::shared_ptr<lfuItem<K, V>>> items;
-    std::size_t max_cap;
+    using Cache<K, V>::max_cap;
 
     //TODO: the most worse time complexity will be O(n) for the insertion sort.
     //The insertion sort may has bad performance, will be evaluated and optimized in the future.
@@ -184,11 +173,6 @@ class LFU : public Cacher<K, V> {
         } else {
             throw std::range_error("unreachable");
         }
-
-        //TODO: Is this nessary?
-        // if (items.size() != _list.size()) {
-        //     throw std::range_error("unreachable");
-        // }
     }
 };
 
