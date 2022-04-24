@@ -24,7 +24,8 @@ namespace mcache {
 template <class K, class V>
 class lfuItem : public cacheItem<K, V> {
    public:
-    using cacheItem<K, V>::value;
+    using cacheItem<K, V>::get_value;
+    using cacheItem<K, V>::put_value;
     using cacheItem<K, V>::expire;
     using cacheItem<K, V>::is_expired;
 
@@ -32,7 +33,7 @@ class lfuItem : public cacheItem<K, V> {
     std::size_t freq;
     Element<std::shared_ptr<lfuItem<K, V>>> *element;
 
-    lfuItem(const K _key, const V _val) : cacheItem<K, V>(_val), key(_key), freq(0) {}
+    lfuItem(const K _key, const V _value) : cacheItem<K, V>(_value), key(_key), freq(0) {}
 };
 
 template <class K, class V>
@@ -40,19 +41,17 @@ class LFU : public Cache<K, V> {
    public:
     LFU(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
-    std::size_t Set(const K &key, const V &value) noexcept override {
-        auto item = std::make_shared<lfuItem<K, V>>(key, value);
+    std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
+            auto item = std::make_shared<lfuItem<K, V>>(key, value);
             if (Size() > max_cap) {
                 Evict(1);
             }
             items.emplace(key, item);
             return 1;
         }
-        _list.remove(found->second->element);
-        found->second->element = nullptr;
-        found->second = item;
+        found->second->put_value(value);
         return 0;
     }
 
@@ -69,7 +68,7 @@ class LFU : public Cache<K, V> {
         }
 
         update(found->second);
-        return found->second->value();
+        return found->second->get_value();
     }
 
     bool Has(const K &key) noexcept override {
@@ -108,27 +107,25 @@ class LFU : public Cache<K, V> {
             if (cnt >= count) {
                 return;
             }
-            auto *temp = e->next;
+            auto *next = e->next;
             auto found = items.find(e->data->key);
             if (found != items.end()) {
                 items.erase(found);
                 _list.remove(e);
                 cnt++;
             }
-            e = temp;
+            e = next;
         }
     }
 
-    std::size_t Size() override {
-        return items.size();
-    }
+    std::size_t Size() override { return items.size(); }
 
     void debug() noexcept override {
         auto *e = _list.front();
         while (e->data != nullptr) {
             std::cout << "[LFU] " << max_cap << "/" << Size() <<
                         ", key: " << e->data->key <<
-                        ", val: " << e->data->value() <<
+                        ", value: " << e->data->get_value() <<
                         ", freq: " << e->data->freq << std::endl;
             e = e->next;
         }

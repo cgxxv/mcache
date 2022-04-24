@@ -23,12 +23,12 @@ int ttl(const struct timeval &expire) noexcept {
 template <class K, class V>
 class cacheItem {
    protected:
-    const V _value;
+    V value;
     struct timeval _expire;  // time to be expired, `now + ttl`
     std::size_t _ttl;
 
     //TODO: ttl should passed by dynamic options
-    cacheItem(const V _val) : _value(_val), _ttl(3600) {
+    cacheItem(const V _value) : value(_value), _ttl(3600) {
         gettimeofday(&_expire, nullptr);
         _expire.tv_sec += _ttl;
     }
@@ -43,7 +43,8 @@ class cacheItem {
         return false;
     }
 
-    const V &value() noexcept { return _value; }
+    const V &get_value() noexcept { return value; }
+    void put_value(const V _value) noexcept { value = _value; }
     const struct timeval &expire() noexcept { return _expire; }
 };
 
@@ -53,7 +54,7 @@ class Cache {
     Cache(std::size_t _max_cap) : max_cap(_max_cap) {}
     virtual ~Cache() = default;
 
-    virtual std::size_t Set(const K &key, const V &value) = 0;
+    virtual std::size_t Put(const K &key, const V &value) = 0;
     virtual const V &Get(const K &key) = 0;
     virtual bool Has(const K &key) = 0;
     virtual bool Remove(const K &key) = 0;
