@@ -18,7 +18,7 @@ class FIFO : public LRU<K, V> {
     FIFO(std::size_t _max_cap) : LRU<K, V>(_max_cap) {}
     ~FIFO() = default;
 
-    using LRU<K, V>::Set;
+    using LRU<K, V>::Put;
     using LRU<K, V>::Get;
     using LRU<K, V>::Has;
     using LRU<K, V>::Remove;
@@ -31,14 +31,14 @@ class FIFO : public LRU<K, V> {
             if (cnt >= count) {
                 return;
             }
-            auto *temp = e->next;
+            auto *next = e->next;
             auto found = items.find(e->data->key);
             if (found != items.end()) {
                 items.erase(found);
                 _list.remove(e);
                 cnt++;
             }
-            e = temp;
+            e = next;
         }
     }
 
@@ -47,7 +47,7 @@ class FIFO : public LRU<K, V> {
         while (e->data != nullptr) {
             std::cout << "[FIFO] " << this->max_cap << "/" << Size() <<
                         ", key: " << e->data->key <<
-                        ", val: " << e->data->value() <<
+                        ", value: " << e->data->get_value() <<
                         ", accessed_at: (" << e->data->accessed_at.tv_sec <<
                         ", " << e->data->accessed_at.tv_usec <<
                         ")" <<std::endl;

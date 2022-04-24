@@ -84,11 +84,9 @@ class List {
     Element<T> *root;
     std::size_t _size;
     void insert(Element<T> *e, Element<T> *at) {
-        //处理当前节点的相邻节点
         e->prev = at;
         e->next = at->next;
 
-        //处理当前节点相邻节点的前后节点
         e->prev->next = e;
         e->next->prev = e;
         _size++;
@@ -107,4 +105,4 @@ class List {
     }
 };
 
-}  // namespace mcache
+}

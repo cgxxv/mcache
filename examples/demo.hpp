@@ -15,9 +15,7 @@ class Demo : public Cache<K, V> {
    public:
     Demo(size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
-    size_t Set(const K &key, const V &value) noexcept override {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
+    size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
             if (items.size() >= max_cap) {
@@ -77,7 +75,7 @@ class Demo : public Cache<K, V> {
 
    private:
     unordered_map<K, V> items;
-    size_t max_cap;
+    using Cache<K, V>::max_cap;
 };
 
 }  // namespace mcache

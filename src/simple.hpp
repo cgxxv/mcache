@@ -11,13 +11,13 @@ namespace mcache {
 template <class K, class V>
 class simpleItem : public cacheItem<K, V> {
    public:
-    using cacheItem<K, V>::value;
+    using cacheItem<K, V>::get_value;
+    using cacheItem<K, V>::put_value;
     using cacheItem<K, V>::expire;
     using cacheItem<K, V>::is_expired;
 
     std::size_t index;
-
-    simpleItem(const V _val) : cacheItem<K, V>(_val), index(0) {}
+    simpleItem(const V _value) : cacheItem<K, V>(_value), index(0) {}
 };
 
 template <class K, class V>
@@ -25,17 +25,17 @@ class Simple : public Cache<K, V> {
    public:
     Simple(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
-    std::size_t Set(const K &key, const V &value) noexcept override {
-        auto item = std::make_shared<simpleItem<K, V>>(value);
+    std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
+            auto item = std::make_shared<simpleItem<K, V>>(value);
             if (Size() > max_cap) {
                 Evict(1);
             }
             items.emplace(key, item);
             return 1;
         }
-        found->second = item;
+        found->second->put_value(value);
         return 0;
     }
 
@@ -49,7 +49,7 @@ class Simple : public Cache<K, V> {
             throw std::range_error("No such element in the cache");
         }
 
-        return found->second->value();
+        return found->second->get_value();
     }
 
     bool Has(const K &key) noexcept override {
@@ -93,7 +93,7 @@ class Simple : public Cache<K, V> {
         for (auto it = items.begin(); it != items.end(); it++) {
             std::cout << "[SIMPLE] " << max_cap << "/" << Size() <<
                         ", key: " << it->first <<
-                        ", val: " << it->second->value() <<
+                        ", value: " << it->second->get_value() <<
                         ", expire: (" << it->second->expire().tv_sec << ", " << it->second->expire().tv_usec << ")" <<
                         ", index: " << it->second->index << std::endl;
         }

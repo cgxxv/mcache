@@ -22,7 +22,8 @@ namespace mcache {
 template <class K, class V>
 class lruItem : public cacheItem<K, V> {
    public:
-    using cacheItem<K, V>::value;
+    using cacheItem<K, V>::get_value;
+    using cacheItem<K, V>::put_value;
     using cacheItem<K, V>::expire;
     using cacheItem<K, V>::is_expired;
 
@@ -38,19 +39,17 @@ class LRU : public Cache<K, V> {
    public:
     LRU(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
 
-    std::size_t Set(const K &key, const V &value) noexcept override {
-        auto item = std::make_shared<lruItem<K, V>>(key, value);
+    std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
+            auto item = std::make_shared<lruItem<K, V>>(key, value);
             if (Size() > max_cap) {
                 Evict(1);
             }
             items.emplace(key, item);
             return 1;
         }
-        _list.remove(found->second->element);
-        found->second->element = nullptr;
-        found->second = item;
+        found->second->put_value(value);
         return 0;
     }
 
@@ -67,7 +66,7 @@ class LRU : public Cache<K, V> {
         }
 
         update(found->second);
-        return found->second->value();
+        return found->second->get_value();
     }
 
     bool Has(const K &key) noexcept override {
@@ -106,27 +105,25 @@ class LRU : public Cache<K, V> {
             if (cnt >= count) {
                 return;
             }
-            auto *temp = e->next;
+            auto *next = e->next;
             auto found = items.find(e->data->key);
             if (found != items.end()) {
                 items.erase(found);
                 _list.remove(e);
                 cnt++;
             }
-            e = temp;
+            e = next;
         }
     }
 
-    std::size_t Size() override {
-        return items.size();
-    }
+    std::size_t Size() override { return items.size(); }
 
     void debug() noexcept override {
         auto *e = _list.front();
         while (e->data != nullptr) {
             std::cout << "[LRU] " << max_cap << "/" << Size() <<
                         ", key: " << e->data->key <<
-                        ", val: " << e->data->value() <<
+                        ", value: " << e->data->get_value() <<
                         ", accessed_at: (" << e->data->accessed_at.tv_sec <<
                         ", " << e->data->accessed_at.tv_usec <<
                         ")" <<std::endl;
