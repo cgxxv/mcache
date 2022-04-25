@@ -1,7 +1,9 @@
 .cache
 .vscode
+.devcontainer
 build
 build-alpine
+build2
 # src/examples
 
 # Prerequisites

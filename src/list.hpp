@@ -6,57 +6,40 @@ template <class T>
 class Element {
    public:
     Element() = default;
-    Element(T _data) : data(_data) {}
+    Element(T _data) : data(_data), next(nullptr), prev(nullptr) {}
+    T data;
     Element *next;
     Element *prev;
-    T data;
 };
 
 template <class T>
 class List {
    public:
     List() noexcept : _size(0) {
-        root = new Element<T>();
-        root->next = root;
-        root->prev = root;
+        _root = new Element<T>();
+        _root->next = _root;
+        _root->prev = _root;
     }
     ~List() noexcept {
-        auto *e = root->next;
-        while (e->data != nullptr) {
+        auto *e = _root->next;
+        while (e != _root) {
             auto *next = e->next;
-            delete e;
+            remove(e);
             e = next;
         }
-        delete root;
+        delete _root;
     }
 
-    std::size_t size() {
-        return _size;
-    }
-    Element<T> *front() {
-        return root->next;
-    }
-    Element<T> *back() {
-        return root->prev;
-    }
-    void push_front(Element<T> *e) {
-        insert(e, root);
-    }
-    void push_back(Element<T> *e) {
-        insert(e, root->prev);
-    }
-    void insert_before(Element<T> *e, Element<T> *at) {
-        insert(e, at->prev);
-    }
-    void insert_after(Element<T> *e, Element<T> *at) {
-        insert(e, at);
-    }
-    void move_to_front(Element<T> *e) {
-        move(e, root);
-    }
-    void move_to_back(Element<T> *e) {
-        move(e, root->prev);
-    }
+    std::size_t size() { return _size; }
+    auto *root() { return _root; }
+    Element<T> *front() { return _root->next; }
+    Element<T> *back() { return _root->prev; }
+    void push_front(Element<T> *e) { insert(e, _root); }
+    void push_back(Element<T> *e) { insert(e, _root->prev); }
+    void insert_before(Element<T> *e, Element<T> *at) { insert(e, at->prev); }
+    void insert_after(Element<T> *e, Element<T> *at) { insert(e, at); }
+    void move_to_front(Element<T> *e) { move(e, _root); }
+    void move_to_back(Element<T> *e) { move(e, _root->prev); }
     void move_before(Element<T> *e, Element<T> *mark) {
         if (e == mark) {
             return;
@@ -81,7 +64,7 @@ class List {
     }
 
    private:
-    Element<T> *root;
+    Element<T> *_root;
     std::size_t _size;
     void insert(Element<T> *e, Element<T> *at) {
         e->prev = at;
@@ -105,4 +88,4 @@ class List {
     }
 };
 
-}
+}  // namespace mcache

@@ -2,6 +2,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "cache.hpp"
 #include "options.hpp"
 #include "simple.hpp"
 #include "fifo.hpp"
@@ -97,7 +98,7 @@ class MCache {
     }
 
    private:
-    Cacher<K, V> cc;
+    Cache<K, V> cc;
 };
 
 }

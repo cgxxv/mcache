@@ -28,10 +28,10 @@ class lruItem : public cacheItem<K, V> {
     using cacheItem<K, V>::is_expired;
 
     const K key;
+    Element<lruItem<K, V>*> *element;
     struct timeval accessed_at;
-    Element<std::shared_ptr<lruItem<K, V>>> *element;
 
-    lruItem(const K _key, const V _val) : cacheItem<K, V>(_val), key(_key) {}
+    lruItem(const K _key, const V _value) : cacheItem<K, V>(_value), key(_key), element(nullptr) {}
 };
 
 template <class K, class V>
@@ -42,11 +42,11 @@ class LRU : public Cache<K, V> {
     std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
-            auto item = std::make_shared<lruItem<K, V>>(key, value);
+            auto item = std::make_unique<lruItem<K, V>>(key, value);
             if (Size() > max_cap) {
                 Evict(1);
             }
-            items.emplace(key, item);
+            items.emplace(key, std::move(item));
             return 1;
         }
         found->second->put_value(value);
@@ -65,7 +65,7 @@ class LRU : public Cache<K, V> {
             throw std::range_error("No such element in the cache");
         }
 
-        update(found->second);
+        update(found->second.get());
         return found->second->get_value();
     }
 
@@ -82,7 +82,7 @@ class LRU : public Cache<K, V> {
             return false;
         }
 
-        update(found->second);
+        update(found->second.get());
         return true;
     }
 
@@ -101,7 +101,7 @@ class LRU : public Cache<K, V> {
     void Evict(const int count) noexcept override {
         auto cnt = 0;
         auto *e = _list.front();
-        while (e->data != nullptr) {
+        while (e != _list.root()) {
             if (cnt >= count) {
                 return;
             }
@@ -120,7 +120,7 @@ class LRU : public Cache<K, V> {
 
     void debug() noexcept override {
         auto *e = _list.front();
-        while (e->data != nullptr) {
+        while (e != _list.root()) {
             std::cout << "[LRU] " << max_cap << "/" << Size() <<
                         ", key: " << e->data->key <<
                         ", value: " << e->data->get_value() <<
@@ -132,11 +132,11 @@ class LRU : public Cache<K, V> {
     }
 
    protected:
-    List<std::shared_ptr<lruItem<K, V>>> _list;
-    std::unordered_map<K, std::shared_ptr<lruItem<K, V>>> items;
+    List<lruItem<K, V>*> _list;
+    std::unordered_map<K, std::unique_ptr<lruItem<K, V>>> items;
     using Cache<K, V>::max_cap;
 
-    void update(std::shared_ptr<lruItem<K, V>> item) {
+    void update(lruItem<K, V> *item) {
         gettimeofday(&item->accessed_at, nullptr);
         if (_list.size() == 0) {
             auto *element = new Element(item);

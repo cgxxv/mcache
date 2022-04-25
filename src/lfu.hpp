@@ -31,9 +31,9 @@ class lfuItem : public cacheItem<K, V> {
 
     const K key;
     std::size_t freq;
-    Element<std::shared_ptr<lfuItem<K, V>>> *element;
+    Element<lfuItem<K, V>*> *element;
 
-    lfuItem(const K _key, const V _value) : cacheItem<K, V>(_value), key(_key), freq(0) {}
+    lfuItem(const K _key, const V _value) : cacheItem<K, V>(_value), key(_key), freq(0), element(nullptr) {}
 };
 
 template <class K, class V>
@@ -44,11 +44,11 @@ class LFU : public Cache<K, V> {
     std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
-            auto item = std::make_shared<lfuItem<K, V>>(key, value);
+            auto item = std::make_unique<lfuItem<K, V>>(key, value);
             if (Size() > max_cap) {
                 Evict(1);
             }
-            items.emplace(key, item);
+            items.emplace(key, std::move(item));
             return 1;
         }
         found->second->put_value(value);
@@ -64,10 +64,11 @@ class LFU : public Cache<K, V> {
             if (found->second->element != nullptr) {
                 _list.remove(found->second->element);
             }
+            items.erase(found);
             throw std::range_error("No such element in the cache");
         }
 
-        update(found->second);
+        update(found->second.get());
         return found->second->get_value();
     }
 
@@ -84,7 +85,7 @@ class LFU : public Cache<K, V> {
             return false;
         }
 
-        update(found->second);
+        update(found->second.get());
         return true;
     }
 
@@ -103,15 +104,15 @@ class LFU : public Cache<K, V> {
     void Evict(const int count) noexcept override {
         auto cnt = 0;
         auto *e = _list.front();
-        while (e->data != nullptr) {
+        while (e != _list.root()) {
             if (cnt >= count) {
                 return;
             }
             auto *next = e->next;
             auto found = items.find(e->data->key);
             if (found != items.end()) {
-                items.erase(found);
                 _list.remove(e);
+                items.erase(found);
                 cnt++;
             }
             e = next;
@@ -122,23 +123,24 @@ class LFU : public Cache<K, V> {
 
     void debug() noexcept override {
         auto *e = _list.front();
-        while (e->data != nullptr) {
+        while (e != _list.root()) {
+            auto item = e->data;
             std::cout << "[LFU] " << max_cap << "/" << Size() <<
-                        ", key: " << e->data->key <<
-                        ", value: " << e->data->get_value() <<
-                        ", freq: " << e->data->freq << std::endl;
+                        ", key: " << item->key <<
+                        ", value: " << item->get_value() <<
+                        ", freq: " << item->freq << std::endl;
             e = e->next;
         }
     }
 
    private:
-    List<std::shared_ptr<lfuItem<K, V>>> _list;
-    std::unordered_map<K, std::shared_ptr<lfuItem<K, V>>> items;
+    List<lfuItem<K, V>*> _list;
+    std::unordered_map<K, std::unique_ptr<lfuItem<K, V>>> items;
     using Cache<K, V>::max_cap;
 
     //TODO: the most worse time complexity will be O(n) for the insertion sort.
     //The insertion sort may has bad performance, will be evaluated and optimized in the future.
-    void update(std::shared_ptr<lfuItem<K, V>> item) {
+    void update(lfuItem<K, V> *item) {
         item->freq += 1;
         if (_list.size() == 0) {
             auto *element = new Element(item);
@@ -147,7 +149,7 @@ class LFU : public Cache<K, V> {
         } else if (_list.size() > 0) {
             auto found = false;
             auto *e = _list.front();
-            while (e->data != nullptr) {
+            while (e != _list.root()) {
                 if (e->data->freq >= item->freq && e->data->key != item->key) {
                     if (item->element != nullptr) {
                         _list.move_before(item->element, e);
@@ -161,12 +163,8 @@ class LFU : public Cache<K, V> {
                 }
                 e = e->next;
             }
-            if (item->element == nullptr) {
-                throw std::runtime_error("unreachable");
-            }
-            if (!found) {
-                _list.move_to_back(item->element);
-            }
+            if (item->element == nullptr) { throw std::runtime_error("unreachable"); }
+            if (!found) { _list.move_to_back(item->element); }
         } else {
             throw std::range_error("unreachable");
         }
