@@ -10,10 +10,11 @@
 
 #pragma once
 #include <sys/time.h>
+
 #include <iostream>
-#include <unordered_map>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 
 #include "cache.hpp"
 #include "list.hpp"
@@ -28,10 +29,11 @@ class lruItem : public cacheItem<K, V> {
     using cacheItem<K, V>::is_expired;
 
     const K key;
-    Element<lruItem<K, V>*> *element;
+    Element<lruItem<K, V> *> *element;
     struct timeval accessed_at;
 
-    lruItem(const K _key, const V _value) : cacheItem<K, V>(_value), key(_key), element(nullptr) {}
+    lruItem(const K _key, const V _value)
+        : cacheItem<K, V>(_value), key(_key), element(nullptr) {}
 };
 
 template <class K, class V>
@@ -121,18 +123,18 @@ class LRU : public Cache<K, V> {
     void debug() noexcept override {
         auto *e = _list.front();
         while (e != _list.root()) {
-            std::cout << "[LRU] " << max_cap << "/" << Size() <<
-                        ", key: " << e->data->key <<
-                        ", value: " << e->data->get_value() <<
-                        ", accessed_at: (" << e->data->accessed_at.tv_sec <<
-                        ", " << e->data->accessed_at.tv_usec <<
-                        ")" <<std::endl;
+            std::cout << "[" << CACHE_LRU << "] " << max_cap << "/" << Size()
+                      << ", key: " << e->data->key
+                      << ", value: " << e->data->get_value()
+                      << ", accessed_at: (" << e->data->accessed_at.tv_sec
+                      << ", " << e->data->accessed_at.tv_usec << ")"
+                      << std::endl;
             e = e->next;
         }
     }
 
    protected:
-    List<lruItem<K, V>*> _list;
+    List<lruItem<K, V> *> _list;
     std::unordered_map<K, std::unique_ptr<lruItem<K, V>>> items;
     using Cache<K, V>::max_cap;
 
@@ -156,4 +158,4 @@ class LRU : public Cache<K, V> {
     }
 };
 
-}
+}  // namespace mcache

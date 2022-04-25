@@ -1,56 +1,144 @@
 #pragma once
+#include <iostream>
 #include <string>
 #include <unordered_map>
-
-using namespace std;
+#include <vector>
 
 namespace mcache {
 
-#define TYPE_SIMPLE 0
-#define TYPE_LFU 1
-#define TYPE_LRU 2
-#define TYPE_FIFO 3
-
-typedef const void loaderFunc(const string &key);
-typedef unordered_map<string, const void> mloaderFunc(
-    const vector<string> &keys);
+typedef const void loaderFunc(const std::string &key);
+typedef std::unordered_map<std::string, const void> mloaderFunc(
+    const std::vector<std::string> &keys);
 typedef const void valptrFunc();
-typedef const unsigned char *serializeFunc(const string &key);
+typedef const unsigned char *serializeFunc(const std::string &key);
 typedef bool unserializeFunc(const unsigned char &value);
 
-struct options {
-    string name;
-    string type;
+class options;
+typedef options *option;
+
+class options {
+   public:
+    std::string name;
+    std::string type;
     int ttl;
     loaderFunc *loader;
-    loaderFunc *real_loader;
+    loaderFunc *_real_loader;
     mloaderFunc *mloader;
-    mloaderFunc *real_mloader;
+    mloaderFunc *_real_mloader;
     void *default_value;
-    serializeFunc serialize;
-    unserializeFunc unserialize;
+    serializeFunc *serialize;
+    unserializeFunc *unserialize;
+
+    // instance used for the first time initialized with mcache.
+    static options &instance() {
+        // Guaranteed to be destroyed.
+        // Instantiated on first use.
+        static options instance;
+        return instance;
+    }
+
+    option WithName(std::string _name) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->name.assign(_name, 0, _name.length());
+        return _instance;
+    }
+
+    option WithCacheType(std::string _type) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->type.assign(_type, 0, _type.length());
+        return _instance;
+    }
+
+    option WithTTL(std::size_t _ttl) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->ttl = _ttl;
+        return _instance;
+    }
+
+    option WithLoader(loaderFunc *_loader) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->loader = _loader;
+        return _instance;
+    }
+
+    option WithMLoader(mloaderFunc *_mloader) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->mloader = _mloader;
+        return _instance;
+    }
+
+    option WithSerialize(serializeFunc *_serialize) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->serialize = _serialize;
+        return _instance;
+    }
+
+    option WithUnserialize(unserializeFunc *_unserialize) {
+        if (_instance == nullptr) {
+            _instance = new options();
+        }
+        _instance->unserialize = _unserialize;
+        return _instance;
+    }
+
+    ~options() { delete _instance; }
+
+   protected:
+    // Constructor? (the {} brackets) are needed here.
+    options()
+        : name(""),
+          type(""),
+          ttl(0),
+          loader(nullptr),
+          _real_loader(nullptr),
+          mloader(nullptr),
+          _real_mloader(nullptr),
+          serialize(nullptr),
+          unserialize(nullptr),
+          _instance(nullptr) {}
+
+    // C++ 11
+    // =======
+    // We can use the better technique of deleting the methods
+    // we don't want.
+   public:
+    options(options const &) = delete;
+    void operator=(options const &) = delete;
+
+    //_instance used for user custom options
+    option _instance;
 };
 
-typedef void option(options *);
-
-auto withName(string name) {
-    return [&](options &o) { o.name = name; };
+option WithName(std::string _name) {
+    return options::instance().WithName(_name);
 }
-
-auto withCacheType(string type) {
-    return [&](options &o) { o.type = type; };
+option WithCacheType(std::string _type) {
+    return options::instance().WithCacheType(_type);
 }
-
-auto withTTL(int ttl) {
-    return [&](options &o) { o.ttl = ttl; };
+option WithTTL(std::size_t _ttl) { return options::instance().WithTTL(_ttl); }
+option WithLoader(loaderFunc *_loader) {
+    return options::instance().WithLoader(_loader);
 }
-
-auto withLoader(loaderFunc *loader) {
-    return [&](options &o) { o.loader = loader; };
+option WithMLoader(mloaderFunc *_mloader) {
+    return options::instance().WithMLoader(_mloader);
 }
-
-auto withMLoader(mloaderFunc *mloader) {
-    return [&](options &o) { o.mloader = mloader; };
+option WithSerialize(serializeFunc *_serialize) {
+    return options::instance().WithSerialize(_serialize);
+}
+option WithUnserialize(unserializeFunc *_unserialize) {
+    return options::instance().WithUnserialize(_unserialize);
 }
 
 }  // namespace mcache

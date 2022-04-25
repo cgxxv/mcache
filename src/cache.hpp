@@ -8,6 +8,12 @@
 #include "list.hpp"
 
 namespace mcache {
+
+#define CACHE_SIMPLE "SIMPLE"
+#define CACHE_LFU "LFU"
+#define CACHE_LRU "LRU"
+#define CACHE_FIFO "FIFO"
+
 int ttl(const struct timeval &expire) noexcept {
     struct timeval tv;
     gettimeofday(&tv, NULL);
