@@ -18,11 +18,17 @@ CONFIGURE_FILE(
     "${PROJECT_BINARY_DIR}/src/config.hpp"
     )
 
-FILE(GLOB mcache_srcs "${PROJECT_SOURCE_DIR}/src/*.hpp")
-ADD_LIBRARY(mcache INTERFACE ${mcache_srcs})
+FILE(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.hpp")
+ADD_LIBRARY(mcache INTERFACE ${sources})
 
 FILE(GLOB simple_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"
                         "${PROJECT_SOURCE_DIR}/examples/*.h"
-                        "${PROJECT_SOURCE_DIR}/examples/*.cc")
+                        "${PROJECT_SOURCE_DIR}/examples/simple.cc")
 ADD_EXECUTABLE(simple ${simple_srcs})
 TARGET_LINK_LIBRARIES(simple mcache)
+
+FILE(GLOB cache_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"
+                        "${PROJECT_SOURCE_DIR}/examples/*.h"
+                        "${PROJECT_SOURCE_DIR}/examples/mcache.cc")
+ADD_EXECUTABLE(cache ${cache_srcs})
+TARGET_LINK_LIBRARIES(cache mcache)

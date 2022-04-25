@@ -5,6 +5,7 @@
 
 #pragma once
 #include <sys/time.h>
+
 #include <iostream>
 #include <memory>
 
@@ -44,12 +45,12 @@ class FIFO : public LRU<K, V> {
     void debug() noexcept override {
         auto *e = _list.front();
         while (e->data != nullptr) {
-            std::cout << "[FIFO] " << this->max_cap << "/" << Size() <<
-                        ", key: " << e->data->key <<
-                        ", value: " << e->data->get_value() <<
-                        ", accessed_at: (" << e->data->accessed_at.tv_sec <<
-                        ", " << e->data->accessed_at.tv_usec <<
-                        ")" <<std::endl;
+            std::cout << "[" << CACHE_FIFO << "] " << this->max_cap << "/"
+                      << Size() << ", key: " << e->data->key
+                      << ", value: " << e->data->get_value()
+                      << ", accessed_at: (" << e->data->accessed_at.tv_sec
+                      << ", " << e->data->accessed_at.tv_usec << ")"
+                      << std::endl;
             e = e->next;
         }
     }
@@ -69,4 +70,4 @@ class FIFO : public LRU<K, V> {
     }
 };
 
-}
+}  // namespace mcache

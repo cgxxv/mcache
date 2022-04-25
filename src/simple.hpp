@@ -1,9 +1,10 @@
 #pragma once
 #include <sys/time.h>
-#include <unordered_map>
+
+#include <iostream>
 #include <memory>
 #include <stdexcept>
-#include <iostream>
+#include <unordered_map>
 
 #include "cache.hpp"
 
@@ -24,16 +25,16 @@ template <class K, class V>
 class Simple : public Cache<K, V> {
    public:
     Simple(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
-    //TODO: clean up
+    // TODO: clean up
     ~Simple() {}
 
     std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
-            //Why use unique_ptr is for three reasons:
-            //1. For auto gc.
-            //2. As it is only owned by items.
-            //3. As unique_ptr has the best performance.
+            // Why use unique_ptr is for three reasons:
+            // 1. For auto gc.
+            // 2. As it is only owned by items.
+            // 3. As unique_ptr has the best performance.
             auto item = std::make_unique<simpleItem<K, V>>(value);
             if (Size() > max_cap) {
                 Evict(1);
@@ -80,7 +81,7 @@ class Simple : public Cache<K, V> {
         return true;
     }
 
-    void Evict(const int count) noexcept override{
+    void Evict(const int count) noexcept override {
         auto cnt = 0;
         for (auto it = items.begin(); it != items.end(); it++) {
             if (cnt == count) {
@@ -97,11 +98,12 @@ class Simple : public Cache<K, V> {
 
     void debug() noexcept override {
         for (auto it = items.begin(); it != items.end(); it++) {
-            std::cout << "[SIMPLE] " << max_cap << "/" << Size() <<
-                        ", key: " << it->first <<
-                        ", value: " << it->second->get_value() <<
-                        ", expire: (" << it->second->expire().tv_sec << ", " << it->second->expire().tv_usec << ")" <<
-                        ", index: " << it->second->index << std::endl;
+            std::cout << "[" << CACHE_SIMPLE << "] " << max_cap << "/" << Size()
+                      << ", key: " << it->first
+                      << ", value: " << it->second->get_value() << ", expire: ("
+                      << it->second->expire().tv_sec << ", "
+                      << it->second->expire().tv_usec << ")"
+                      << ", index: " << it->second->index << std::endl;
         }
     }
 
@@ -110,4 +112,4 @@ class Simple : public Cache<K, V> {
     using Cache<K, V>::max_cap;
 };
 
-}
+}  // namespace mcache

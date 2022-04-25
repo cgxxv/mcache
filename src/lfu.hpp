@@ -12,10 +12,11 @@
 
 #pragma once
 #include <sys/time.h>
+
 #include <iostream>
-#include <unordered_map>
 #include <memory>
 #include <stdexcept>
+#include <unordered_map>
 
 #include "cache.hpp"
 #include "list.hpp"
@@ -31,9 +32,10 @@ class lfuItem : public cacheItem<K, V> {
 
     const K key;
     std::size_t freq;
-    Element<lfuItem<K, V>*> *element;
+    Element<lfuItem<K, V> *> *element;
 
-    lfuItem(const K _key, const V _value) : cacheItem<K, V>(_value), key(_key), freq(0), element(nullptr) {}
+    lfuItem(const K _key, const V _value)
+        : cacheItem<K, V>(_value), key(_key), freq(0), element(nullptr) {}
 };
 
 template <class K, class V>
@@ -125,21 +127,22 @@ class LFU : public Cache<K, V> {
         auto *e = _list.front();
         while (e != _list.root()) {
             auto item = e->data;
-            std::cout << "[LFU] " << max_cap << "/" << Size() <<
-                        ", key: " << item->key <<
-                        ", value: " << item->get_value() <<
-                        ", freq: " << item->freq << std::endl;
+            std::cout << "[" << CACHE_LFU << "] " << max_cap << "/" << Size()
+                      << ", key: " << item->key
+                      << ", value: " << item->get_value()
+                      << ", freq: " << item->freq << std::endl;
             e = e->next;
         }
     }
 
    private:
-    List<lfuItem<K, V>*> _list;
+    List<lfuItem<K, V> *> _list;
     std::unordered_map<K, std::unique_ptr<lfuItem<K, V>>> items;
     using Cache<K, V>::max_cap;
 
-    //TODO: the most worse time complexity will be O(n) for the insertion sort.
-    //The insertion sort may has bad performance, will be evaluated and optimized in the future.
+    // TODO: the most worse time complexity will be O(n) for the insertion sort.
+    // The insertion sort may has bad performance, will be evaluated and
+    // optimized in the future.
     void update(lfuItem<K, V> *item) {
         item->freq += 1;
         if (_list.size() == 0) {
@@ -163,12 +166,16 @@ class LFU : public Cache<K, V> {
                 }
                 e = e->next;
             }
-            if (item->element == nullptr) { throw std::runtime_error("unreachable"); }
-            if (!found) { _list.move_to_back(item->element); }
+            if (item->element == nullptr) {
+                throw std::runtime_error("unreachable");
+            }
+            if (!found) {
+                _list.move_to_back(item->element);
+            }
         } else {
             throw std::range_error("unreachable");
         }
     }
 };
 
-}
+}  // namespace mcache
