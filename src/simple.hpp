@@ -24,15 +24,21 @@ template <class K, class V>
 class Simple : public Cache<K, V> {
    public:
     Simple(std::size_t _max_cap) : Cache<K, V>(_max_cap) {}
+    //TODO: clean up
+    ~Simple() {}
 
     std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
-            auto item = std::make_shared<simpleItem<K, V>>(value);
+            //Why use unique_ptr is for three reasons:
+            //1. For auto gc.
+            //2. As it is only owned by items.
+            //3. As unique_ptr has the best performance.
+            auto item = std::make_unique<simpleItem<K, V>>(value);
             if (Size() > max_cap) {
                 Evict(1);
             }
-            items.emplace(key, item);
+            items.emplace(key, std::move(item));
             return 1;
         }
         found->second->put_value(value);
@@ -100,7 +106,7 @@ class Simple : public Cache<K, V> {
     }
 
    private:
-    std::unordered_map<K, std::shared_ptr<simpleItem<K, V>>> items;
+    std::unordered_map<K, std::unique_ptr<simpleItem<K, V>>> items;
     using Cache<K, V>::max_cap;
 };
 

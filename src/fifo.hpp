@@ -16,7 +16,6 @@ template <class K, class V>
 class FIFO : public LRU<K, V> {
    public:
     FIFO(std::size_t _max_cap) : LRU<K, V>(_max_cap) {}
-    ~FIFO() = default;
 
     using LRU<K, V>::Put;
     using LRU<K, V>::Get;
@@ -27,7 +26,7 @@ class FIFO : public LRU<K, V> {
     void Evict(const int count) noexcept override {
         auto cnt = 0;
         auto *e = _list.front();
-        while (e->data != nullptr) {
+        while (e != _list.root()) {
             if (cnt >= count) {
                 return;
             }
@@ -59,7 +58,7 @@ class FIFO : public LRU<K, V> {
     using LRU<K, V>::_list;
     using LRU<K, V>::items;
 
-    void update(std::shared_ptr<lruItem<K, V>> item) {
+    void update(lruItem<K, V> *item) {
         gettimeofday(&item->accessed_at, nullptr);
 
         if (item->element == nullptr) {
