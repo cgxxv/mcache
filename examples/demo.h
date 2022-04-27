@@ -1,8 +1,6 @@
 #pragma once
 #include <random>
 
-using namespace mcache;
-
 int rand() {
     std::random_device crypto_random_generator;
     std::uniform_int_distribution<int> int_distribution(0, 9);
