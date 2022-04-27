@@ -53,7 +53,8 @@ class Simple : public Cache<K, V> {
         }
 
         if (found->second->is_expired()) {
-            throw std::range_error("No such element in the cache");
+            items.erase(found);
+            throw std::range_error("Element has been expired");
         }
 
         return found->second->get_value();
