@@ -1,6 +1,6 @@
 PROJECT(mcache)
 CMAKE_MINIMUM_REQUIRED(VERSION 3.20)
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -v -g")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g") # -H show all the headers needed for the project.
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -std=c++17 -fno-strict-aliasing -Wno-register -Wno-pessimizing-move -Wshadow")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -std=c++17 -fno-strict-aliasing -Wno-register -Wno-pessimizing-move -Wshadow")
@@ -18,7 +18,9 @@ CONFIGURE_FILE(
     "${PROJECT_BINARY_DIR}/src/config.hpp"
     )
 
-FILE(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.hpp")
+FILE(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.hpp"
+                    "${PROJECT_SOURCE_DIR}/src/*.h"
+                    "${PROJECT_SOURCE_DIR}/src/*.cc")
 ADD_LIBRARY(mcache INTERFACE ${sources})
 
 FILE(GLOB simple_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"

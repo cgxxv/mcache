@@ -33,7 +33,7 @@ class cacheItem {
     struct timeval _expire;  // time to be expired, `now + ttl`
     std::size_t _ttl;
 
-    //TODO: ttl should passed by dynamic options
+    //TODO: ttl should be dealed with dynamic options
     cacheItem(const V _value) : value(_value), _ttl(3600) {
         gettimeofday(&_expire, nullptr);
         _expire.tv_sec += _ttl;
