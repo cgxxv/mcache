@@ -8,7 +8,7 @@
 #include "cache.h"
 #include "simple.h"
 
-void demo(simple *cc);
+void demo(simple cc);
 
 int main() {
     for (int i = 0; i < 100; i++) {
@@ -16,7 +16,7 @@ int main() {
     }
 }
 
-void demo(simple *cc) {
+void demo(simple cc) {
     const int count = 10;
     std::vector<int> keys = {0,1,2,3,4,5,6,7,8,9};
     std::vector<int> vals = {10,11,12,13,14,15,16,17,18,19};
