@@ -56,9 +56,9 @@ void demo(std::size_t max_cap) {
     std::cout << std::endl;
 
     for (int i = 0; i <count;i++) {
-        const int v = cc.Get(keys[i]);
-        assert(v == vals[i]);
-        assert(cc.Has(keys[i]));
+        const int v = cc.Get(i);
+        assert(v == 10+i);
+        assert(cc.Has(i));
 
         if (i < 5) {
             bool ok = cc.Has(5);
@@ -74,12 +74,20 @@ void demo(std::size_t max_cap) {
         }
     }
 
+    const int tk = 10;
+    const int tv = 20;
+    assert(cc.Put(tk, tv) == 1);
+    assert(cc.Get(tk) == 20);
+    assert(cc.Put(tk, 22) == 0);
+    assert(cc.Get(tk) == 22);
+    assert(tv == 20);
+
     cc.Evict(1);
 
     cc.debug();
     std::cout << std::endl;
 
-    assert(cc.Size() == 8);
+    assert(cc.Size() == 9);
 
     //assert(!cc.Has(5));
     //assert(vals[5] == 10+keys[5]);
