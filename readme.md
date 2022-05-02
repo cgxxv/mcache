@@ -1,6 +1,6 @@
 # mcache
 
-MCache is a local memory cache with some modern features, implemented LFU, LRU, FIFO, simple evication.
+MCache is a local memory cache with some modern features, implemented LFU, LRU, FIFO, ARC, simple evication.
 
 ## examples
 
