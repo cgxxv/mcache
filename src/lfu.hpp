@@ -31,11 +31,12 @@ class lfuItem : public cacheItem<K, V> {
     using cacheItem<K, V>::is_expired;
 
     const K key;
-    std::size_t freq;
     Element<lfuItem<K, V> *> *element;
+    std::size_t *freq;
+    struct timeval *accessed_at;
 
     lfuItem(const K _key, const V _value)
-        : cacheItem<K, V>(_value), key(_key), freq(0), element(nullptr) {}
+        : cacheItem<K, V>(_value), key(_key), element(nullptr), freq(nullptr), accessed_at(nullptr) {}
 };
 
 template <class K, class V>
@@ -46,10 +47,8 @@ class LFU : public Cache<K, V> {
     std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
+            Evict(1);
             auto item = std::make_unique<lfuItem<K, V>>(key, value);
-            if (Size() > max_cap) {
-                Evict(1);
-            }
             items.emplace(key, std::move(item));
             return 1;
         }
@@ -62,15 +61,17 @@ class LFU : public Cache<K, V> {
         if (found == items.end()) {
             throw std::range_error("No such element in the cache");
         }
+
+        update(found->second.get());
+
         if (found->second->is_expired()) {
             if (found->second->element != nullptr) {
-                _list.remove(found->second->element);
+                remove(found->second->element);
             }
             items.erase(found);
             throw std::range_error("No such element in the cache");
         }
 
-        update(found->second.get());
         return found->second->get_value();
     }
 
@@ -79,15 +80,17 @@ class LFU : public Cache<K, V> {
         if (found == items.end()) {
             return false;
         }
+
+        update(found->second.get());
+
         if (found->second->is_expired()) {
             if (found->second->element != nullptr) {
-                _list.remove(found->second->element);
+                remove(found->second->element);
             }
             items.erase(found);
             return false;
         }
 
-        update(found->second.get());
         return true;
     }
 
@@ -97,13 +100,15 @@ class LFU : public Cache<K, V> {
             return false;
         }
         if (found->second->element != nullptr) {
-            _list.remove(found->second->element);
+            remove(found->second->element);
         }
         items.erase(found);
         return true;
     }
 
     void Evict(const int count) noexcept override {
+        if (Size() < max_cap) return;
+
         auto cnt = 0;
         auto *e = _list.front();
         while (e != _list.root()) {
@@ -113,7 +118,7 @@ class LFU : public Cache<K, V> {
             auto *next = e->next;
             auto found = items.find(e->data->key);
             if (found != items.end()) {
-                _list.remove(e);
+                remove(e);
                 items.erase(found);
                 cnt++;
             }
@@ -123,28 +128,36 @@ class LFU : public Cache<K, V> {
 
     std::size_t Size() override { return items.size(); }
 
-    void debug() noexcept override {
+    virtual void debug() override {
         auto *e = _list.front();
         while (e != _list.root()) {
             auto item = e->data;
             std::cout << "[" << CACHE_LFU << "] " << max_cap << "/" << Size()
                       << ", key: " << item->key
                       << ", value: " << item->get_value()
-                      << ", freq: " << item->freq << std::endl;
+                      << ", freq: " << *item->freq << std::endl;
             e = e->next;
         }
     }
 
-   private:
+   protected:
     List<lfuItem<K, V> *> _list;
     std::unordered_map<K, std::unique_ptr<lfuItem<K, V>>> items;
     using Cache<K, V>::max_cap;
 
+    virtual void remove(Element<lfuItem<K, V> *> *e) {
+        _list.remove(e);
+        delete e;
+    }
+
     // TODO: the most worse time complexity will be O(n) for the insertion sort.
     // The insertion sort may has bad performance, will be evaluated and
     // optimized in the future.
-    void update(lfuItem<K, V> *item) {
-        item->freq += 1;
+    virtual void update(lfuItem<K, V> *item) {
+        if (item->freq == nullptr) {
+            item->freq = new std::size_t(0);
+        }
+        *item->freq += 1;
         if (_list.size() == 0) {
             auto *element = new Element(item);
             item->element = element;
@@ -153,7 +166,7 @@ class LFU : public Cache<K, V> {
             auto found = false;
             auto *e = _list.front();
             while (e != _list.root()) {
-                if (e->data->freq >= item->freq && e->data->key != item->key) {
+                if (*e->data->freq >= *item->freq && e->data->key != item->key) {
                     if (item->element != nullptr) {
                         _list.move_before(item->element, e);
                     } else {

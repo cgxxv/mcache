@@ -11,6 +11,7 @@
 #include "fifo.hpp"
 #include "lfu.hpp"
 #include "lru.hpp"
+#include "arc.hpp"
 #include "options.hpp"
 #include "simple.hpp"
 
@@ -18,11 +19,12 @@ using namespace mcache;
 
 int main() {
     for (size_t i = 0; i < 100; i++) {
-        demo<MCache<int, int, Demo>>(100);
-        demo<MCache<int, int, Simple>>(100);
-        demo<MCache<int, int, LFU>>(100);
-        demo<MCache<int, int, LRU>>(100);
-        demo<MCache<int, int, FIFO>>(100);
+        demo<MCache<int, int, Demo>>(10);
+        demo<MCache<int, int, Simple>>(10);
+        demo<MCache<int, int, LFU>>(10);
+        demo<MCache<int, int, LRU>>(10);
+        demo<MCache<int, int, FIFO>>(10);
+        demo<MCache<int, int, ARC>>(10);
     }
 }
 
@@ -83,7 +85,7 @@ void demo(std::size_t max_cap) {
     cc.debug();
     std::cout << std::endl;
 
-    assert(cc.Size() == 8);
+    assert(cc.Size() == 9);
 
     // assert(!cc.Has(5));
     // assert(vals[5] == 10+keys[5]);
