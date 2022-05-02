@@ -23,11 +23,11 @@ FILE(GLOB sources "${PROJECT_SOURCE_DIR}/src/*.hpp"
                     "${PROJECT_SOURCE_DIR}/src/*.cc")
 ADD_LIBRARY(mcache INTERFACE ${sources})
 
-FILE(GLOB simple_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"
+FILE(GLOB sample_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"
                         "${PROJECT_SOURCE_DIR}/examples/*.h"
-                        "${PROJECT_SOURCE_DIR}/examples/simple.cc")
-ADD_EXECUTABLE(simple ${simple_srcs})
-TARGET_LINK_LIBRARIES(simple mcache)
+                        "${PROJECT_SOURCE_DIR}/examples/sample.cc")
+ADD_EXECUTABLE(sample ${sample_srcs})
+TARGET_LINK_LIBRARIES(sample mcache)
 
 FILE(GLOB cache_srcs "${PROJECT_SOURCE_DIR}/examples/*.hpp"
                         "${PROJECT_SOURCE_DIR}/examples/*.h"

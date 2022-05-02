@@ -31,14 +31,12 @@ class Simple : public Cache<K, V> {
     std::size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
+            Evict(1);
             // Why use unique_ptr is for three reasons:
             // 1. For auto gc.
             // 2. As it is only owned by items.
             // 3. As unique_ptr has the best performance.
             auto item = std::make_unique<simpleItem<K, V>>(value);
-            if (Size() > max_cap) {
-                Evict(1);
-            }
             items.emplace(key, std::move(item));
             return 1;
         }
@@ -83,6 +81,8 @@ class Simple : public Cache<K, V> {
     }
 
     void Evict(const int count) noexcept override {
+        if (Size() < max_cap) return;
+
         auto cnt = 0;
         for (auto it = items.begin(); it != items.end(); it++) {
             if (cnt == count) {

@@ -18,9 +18,7 @@ class Demo : public Cache<K, V> {
     size_t Put(const K &key, const V &value) noexcept override {
         auto found = items.find(key);
         if (found == items.end()) {
-            if (items.size() >= max_cap) {
-                Evict(1);
-            }
+            Evict(1);
             items.emplace(key, value);
             return 1;
         }
@@ -50,6 +48,8 @@ class Demo : public Cache<K, V> {
     }
 
     void Evict(const int count) noexcept override {
+        if (Size() < max_cap) return;
+
         int cnt = 0;
         for (auto it = items.begin(); it != items.end(); it++) {
             if (cnt == count) {

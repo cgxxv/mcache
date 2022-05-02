@@ -9,17 +9,19 @@
 #include "fifo.hpp"
 #include "lfu.hpp"
 #include "lru.hpp"
+#include "arc.hpp"
 #include "demo.h"
 
 using namespace mcache;
 
 int main() {
     for (int i = 0; i < 100; i++) {
-        demo<Demo<int, int>>(100);
-        demo<Simple<int, int>>(100);
-        demo<LFU<int, int>>(100);
-        demo<LRU<int, int>>(100);
-        demo<FIFO<int, int>>(100);
+        demo<Demo<int, int>>(10);
+        demo<Simple<int, int>>(10);
+        demo<LFU<int, int>>(10);
+        demo<LRU<int, int>>(10);
+        demo<FIFO<int, int>>(10);
+        demo<ARC<int, int>>(10);
     }
 }
 
@@ -79,7 +81,15 @@ void demo(std::size_t max_cap) {
     cc.debug();
     std::cout << std::endl;
 
-    assert(cc.Size() == 8);
+    assert(cc.Size() == 9);
+
+    assert(cc.Put(10, 20) == 1);
+    assert(cc.Size() == 10);
+
+    assert(cc.Get(10) == 20);
+
+    cc.Evict(1);
+    assert(cc.Size() == 9);
 
     //assert(!cc.Has(5));
     //assert(vals[5] == 10+keys[5]);

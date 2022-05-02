@@ -60,7 +60,6 @@ class List {
         if (_size > 0) {
             _size--;
         }
-        delete e;
     }
 
    private:

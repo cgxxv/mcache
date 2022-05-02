@@ -13,6 +13,7 @@ namespace mcache {
 #define CACHE_LFU "LFU"
 #define CACHE_LRU "LRU"
 #define CACHE_FIFO "FIFO"
+#define CACHE_ARC "ARC"
 
 int ttl(const struct timeval &expire) noexcept {
     struct timeval tv;

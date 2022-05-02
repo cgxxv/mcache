@@ -7,24 +7,25 @@
 #include <sys/time.h>
 
 #include <iostream>
-#include <memory>
 
 #include "cache.hpp"
-#include "lru.hpp"
+#include "lfu.hpp"
 
 namespace mcache {
 template <class K, class V>
-class FIFO : public LRU<K, V> {
+class FIFO : public LFU<K, V> {
    public:
-    FIFO(std::size_t _max_cap) : LRU<K, V>(_max_cap) {}
+    FIFO(std::size_t _max_cap) : LFU<K, V>(_max_cap) {}
 
-    using LRU<K, V>::Put;
-    using LRU<K, V>::Get;
-    using LRU<K, V>::Has;
-    using LRU<K, V>::Remove;
-    using LRU<K, V>::Size;
+    using LFU<K, V>::Put;
+    using LFU<K, V>::Get;
+    using LFU<K, V>::Has;
+    using LFU<K, V>::Remove;
+    using LFU<K, V>::Size;
 
     void Evict(const int count) noexcept override {
+        if (Size() < max_cap) return;
+
         auto cnt = 0;
         auto *e = _list.front();
         while (e != _list.root()) {
@@ -35,7 +36,7 @@ class FIFO : public LRU<K, V> {
             auto found = items.find(e->data->key);
             if (found != items.end()) {
                 items.erase(found);
-                _list.remove(e);
+                remove(e);
                 cnt++;
             }
             e = next;
@@ -48,20 +49,25 @@ class FIFO : public LRU<K, V> {
             std::cout << "[" << CACHE_FIFO << "] " << this->max_cap << "/"
                       << Size() << ", key: " << e->data->key
                       << ", value: " << e->data->get_value()
-                      << ", accessed_at: (" << e->data->accessed_at.tv_sec
-                      << ", " << e->data->accessed_at.tv_usec << ")"
+                      << ", accessed_at: (" << e->data->accessed_at->tv_sec
+                      << ", " << e->data->accessed_at->tv_usec << ")"
                       << std::endl;
             e = e->next;
         }
     }
 
-   private:
-    using LRU<K, V>::_list;
-    using LRU<K, V>::items;
+   protected:
+    using LFU<K, V>::_list;
+    using LFU<K, V>::items;
+    using LFU<K, V>::max_cap;
 
-    void update(lruItem<K, V> *item) {
-        gettimeofday(&item->accessed_at, nullptr);
+    using LFU<K, V>::remove;
 
+    void update(lfuItem<K, V> *item) override {
+        if (item->accessed_at == nullptr) {
+            item->accessed_at = new timeval();
+        }
+        gettimeofday(item->accessed_at, nullptr);
         if (item->element == nullptr) {
             auto *element = new Element(item);
             item->element = element;
