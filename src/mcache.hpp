@@ -65,7 +65,7 @@ class MCache : public options {
     }
 
     bool Has(const K &key) { return cc.Has(key); }
-    void Evict(const int count) { return cc.Evict(count); }
+    bool Evict(const int count) { return cc.Evict(count); }
     std::size_t Size() { return cc.Size(); }
     void debug() { return cc.debug(); }
 

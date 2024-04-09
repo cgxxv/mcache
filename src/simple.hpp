@@ -80,8 +80,8 @@ class Simple : public Cache<K, V> {
         return true;
     }
 
-    void Evict(const int count) noexcept override {
-        if (Size() < max_cap) return;
+    bool Evict(const int count) noexcept override {
+        if (Size() < max_cap) return false;
 
         auto cnt = 0;
         for (auto it = items.begin(); it != items.end(); it++) {
@@ -92,7 +92,7 @@ class Simple : public Cache<K, V> {
             cnt++;
         }
 
-        return;
+        return cnt == count;
     }
 
     std::size_t Size() noexcept override { return items.size(); }

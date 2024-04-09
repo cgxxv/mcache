@@ -98,10 +98,8 @@ class ARC : public LFU<K, V> {
     using LFU<K, V>::Remove;
     using LFU<K, V>::Size;
 
-    void Evict(const int count) noexcept override {
-        if (Size() < max_cap) {
-            return;
-        }
+    bool Evict(const int count) noexcept override {
+        if (Size() < max_cap) return false;
 
         auto cnt = 0;
         while (cnt < count) {
@@ -146,6 +144,8 @@ class ARC : public LFU<K, V> {
                 }
             }
         }
+
+        return cnt == count;
     }
 
     void debug() override {

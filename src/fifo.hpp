@@ -23,14 +23,14 @@ class FIFO : public LFU<K, V> {
     using LFU<K, V>::Remove;
     using LFU<K, V>::Size;
 
-    void Evict(const int count) noexcept override {
-        if (Size() < max_cap) return;
+    bool Evict(const int count) noexcept override {
+        if (Size() < max_cap) return false;
 
         auto cnt = 0;
         auto *e = _list.front();
         while (e != _list.root()) {
             if (cnt >= count) {
-                return;
+                break;
             }
             auto *next = e->next;
             auto found = items.find(e->data->key);
@@ -41,6 +41,8 @@ class FIFO : public LFU<K, V> {
             }
             e = next;
         }
+
+        return cnt == count;
     }
 
     void debug() noexcept override {

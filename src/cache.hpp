@@ -65,7 +65,7 @@ class Cache {
     virtual const V &Get(const K &key) = 0;
     virtual bool Has(const K &key) = 0;
     virtual bool Remove(const K &key) = 0;
-    virtual void Evict(const int count) = 0;
+    virtual bool Evict(const int count) = 0;
     virtual std::size_t Size() = 0;
     virtual void debug() = 0;
 

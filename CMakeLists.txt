@@ -4,8 +4,11 @@ SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -v -g")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g") # -H show all the headers needed for the project.
 SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb -std=c++17 -fno-strict-aliasing -Wno-register -Wno-pessimizing-move -Wshadow")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall -std=c++17 -fno-strict-aliasing -Wno-register -Wno-pessimizing-move -Wshadow")
-SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    ADD_DEFINITIONS(-DDEBUG_MODE)
+endif()
 
 # The version number.
 SET(LCACHE_VERSION_MAJOR 1)

@@ -6,26 +6,30 @@
 #include <string>
 #include <vector>
 
+#include "arc.hpp"
 #include "demo.h"
 #include "demo.hpp"
 #include "fifo.hpp"
 #include "lfu.hpp"
 #include "lru.hpp"
-#include "arc.hpp"
 #include "options.hpp"
 #include "simple.hpp"
 
 using namespace mcache;
 
 int main() {
-    for (size_t i = 0; i < 100; i++) {
-        demo<MCache<int, int, Demo>>(10);
-        demo<MCache<int, int, Simple>>(10);
-        demo<MCache<int, int, LFU>>(10);
-        demo<MCache<int, int, LRU>>(10);
-        demo<MCache<int, int, FIFO>>(10);
-        demo<MCache<int, int, ARC>>(10);
-    }
+    demo<MCache<int, int, Demo>>(10);
+    std::cout << "Test MCache<int, int, Demo>   : PASSED" << std::endl;
+    demo<MCache<int, int, Simple>>(10);
+    std::cout << "Test MCache<int, int, Simple> : PASSED" << std::endl;
+    demo<MCache<int, int, LFU>>(10);
+    std::cout << "Test MCache<int, int, LFU>    : PASSED" << std::endl;
+    demo<MCache<int, int, LRU>>(10);
+    std::cout << "Test MCache<int, int, LRU>    : PASSED" << std::endl;
+    demo<MCache<int, int, FIFO>>(10);
+    std::cout << "Test MCache<int, int, FIFO>   : PASSED" << std::endl;
+    demo<MCache<int, int, ARC>>(10);
+    std::cout << "Test MCache<int, int, ARC>    : PASSED" << std::endl;
 }
 
 template <class T>
@@ -51,49 +55,45 @@ void demo(std::size_t max_cap) {
         assert(v == vals[i]);
     }
 
+    // Shuffle for LFU shuffle
     for (int i = 0; i < 10e3; i++) {
-        int r = rand();
-        // std::cout << r << std::endl;
+        int r = rand(0, 9);
         const int v = cc.Get(r, opt);
         assert(v == vals[r]);
     }
 
+#ifdef DEBUG_MODE
     cc.debug();
-    std::cout << std::endl;
+    std::cout << "========== before eviction ==========" << std::endl;
+#endif
 
-    for (int i = 0; i < count; i++) {
-        const int v = cc.Get(keys[i], opt);
-        assert(v == vals[i]);
-        assert(cc.Has(keys[i]));
-
-        if (i < 5) {
-            bool ok = cc.Has(5);
-            assert(ok);
-        } else if (i > 5) {
-            bool ok = cc.Has(5);
-            assert(!ok);
-        } else {
-            bool ok = cc.Remove(keys[i]);
-            assert(ok);
-
-            assert(vals[i] == 10 + i);
-        }
-    }
-
-    cc.Evict(1);
-
-    cc.debug();
-    std::cout << std::endl;
-
+    assert(cc.Size() == 10);
+    assert(cc.Evict(1));
     assert(cc.Size() == 9);
 
-    // assert(!cc.Has(5));
-    // assert(vals[5] == 10+keys[5]);
-    // assert(keys[5] == 5);
+#ifdef DEBUG_MODE
+    cc.debug();
+    std::cout << "========== after eviction ==========" << std::endl;
+#endif
 
-    // assert(vals[0] == cc.Get(0));
-    // assert(vals[0] == 10);
-    // int v = 10000;
-    // vals[0] = v;
-    // assert(cc.Get(0) == 10);
+    assert(cc.Put(10, 20, opt) == 1);
+    assert(cc.Size() == 10);
+
+    assert(cc.Get(10, opt) == 20);
+
+    assert(cc.Evict(1));
+    assert(cc.Size() == 9);
+
+    assert(1 == cc.Put(11, 1111, opt));
+    assert(cc.Remove(11));
+    assert(!cc.Has(11));
+
+    assert(1 == cc.Put(222, 2222, opt));
+    assert(2222 == cc.Get(222, opt));
+    assert(10 == cc.Size());
+
+#ifdef DEBUG_MODE
+    cc.debug();
+    std::cout << "========== final data ==========" << std::endl;
+#endif
 }

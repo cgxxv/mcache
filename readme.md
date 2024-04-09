@@ -5,9 +5,11 @@ MCache is a local memory cache with some modern features, implemented LFU, LRU, 
 ## examples
 
 ```bash
-make build
+mkdir build
 cd build
-cmake ..
+#see more details
+#cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make simple && ./simple
 make cache && ./cache
 ```

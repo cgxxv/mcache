@@ -106,14 +106,14 @@ class LFU : public Cache<K, V> {
         return true;
     }
 
-    void Evict(const int count) noexcept override {
-        if (Size() < max_cap) return;
+    bool Evict(const int count) noexcept override {
+        if (Size() < max_cap) return false;
 
         auto cnt = 0;
         auto *e = _list.front();
         while (e != _list.root()) {
             if (cnt >= count) {
-                return;
+                break;
             }
             auto *next = e->next;
             auto found = items.find(e->data->key);
@@ -124,6 +124,8 @@ class LFU : public Cache<K, V> {
             }
             e = next;
         }
+
+        return cnt == count;
     }
 
     std::size_t Size() override { return items.size(); }
