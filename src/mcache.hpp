@@ -16,14 +16,18 @@ class MCache : public options {
     MCache(std::size_t _max_cap) : cc(T<K, V>(_max_cap)) {}
     ~MCache() = default;
 
+    // Put will update or add a item into the cache.
     std::size_t Put(const K &key, const V &value, option opt, ...) {
         return cc.Put(key, value);
     }
 
+    // Get return a value from the cache by the key.
     const V &Get(const K &key, option opt, ...) { return cc.Get(key); }
 
+    // Remove will delete a item from the cache immediately.
     bool Remove(const K &key) { return cc.Remove(key); }
 
+    // MPut will update or add a bunch of KVs to the cache
     std::size_t MPut(const std::vector<K> &keys, const std::vector<V> &values,
                      option opt, ...) {
         if (keys.size() != values.size()) {
@@ -41,6 +45,7 @@ class MCache : public options {
         return cnt;
     }
 
+    // MGet will return unordered_map by the keys
     std::unordered_map<K, V> MGet(const std::vector<K> &keys, option opt, ...) {
         std::unordered_map<K, V> result;
         for (auto key : keys) {
@@ -53,6 +58,7 @@ class MCache : public options {
         return result;
     }
 
+    // MRemove will remove a bunch of cache items by keys.
     std::size_t MRemove(const std::vector<K> &keys) {
         auto cnt = 0;
         for (auto key : keys) {
@@ -64,8 +70,11 @@ class MCache : public options {
         return cnt;
     }
 
+    // Has check if a key exists
     bool Has(const K &key) { return cc.Has(key); }
+    // Evict will delete a item from the cache when the cache is full.
     bool Evict(const int count) { return cc.Evict(count); }
+    // Size return the length of current cache.
     std::size_t Size() { return cc.Size(); }
     void debug() { return cc.debug(); }
 

@@ -61,14 +61,23 @@ class Cache {
     Cache(std::size_t _max_cap) : max_cap(_max_cap) {}
     virtual ~Cache() = default;
 
+    // Put for update the item or add a item
+    // If the cache is full, and you still put a item, in this case
+    // first evict a cache item, then add a the new one.
     virtual std::size_t Put(const K &key, const V &value) = 0;
+    // Get for query a item by key
     virtual const V &Get(const K &key) = 0;
+    // Has for checking a item exists or not
     virtual bool Has(const K &key) = 0;
+    // Remove means just remove the item by key immediately
     virtual bool Remove(const K &key) = 0;
+    // Evict means evict a item when the cache is full
     virtual bool Evict(const int count) = 0;
+    // Size return the cache length.
     virtual std::size_t Size() = 0;
     virtual void debug() = 0;
 
+    // max_cap is the cache capacity
     std::size_t max_cap;
 };
 
