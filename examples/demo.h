@@ -10,5 +10,5 @@ int rand(int start, int end) {
     return int_distribution(crypto_random_generator);
 }
 
-template <class T>
-void demo(std::size_t max_cap);
+template <class T, class K, class V>
+void demo(std::size_t max_cap, std::vector<K> keys, std::vector<V> vals);
